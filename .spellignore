@@ -1,0 +1,5 @@
+# note, this file follows same conventions as gitignore
+.env/
+venv/
+temp/
+__temp/

@@ -1,0 +1,54 @@
+# See http://help.github.com/ignore-files/ for more about ignoring files.
+
+# ==============================================================================
+# GENERAL
+# ==============================================================================
+
+*.log
+*.pid
+
+# temp dirs
+temp/
+tmp/
+.temp/
+.tmp/
+__temp/
+.cache/
+
+# local dirs
+local/
+secrets/
+public/
+
+# n/vim files
+*.sw[op]
+**/*.sw[op]
+**/.netrwhist
+
+# OS cruft
+.DS_Store
+Thumbs.db
+
+# optional distribution directories
+# build/
+# dist/
+
+# ==============================================================================
+# LANGUAGE SPECIFIC
+# ==============================================================================
+
+# python
+__pycache__/
+*.py[cod]
+*$py.class
+env/
+.env/
+venv/
+.venv/
+
+# javascript
+node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.eslintcache
