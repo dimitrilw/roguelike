@@ -1,7 +1,8 @@
+# BUILT-IN
 from typing import Optional
-
+# INSTALLED
 import tcod.event
-
+# LOCAL
 from actions import Action, EscapeAction, MovementAction
 
 class EventHandler(tcod.event.EventDispatch[Action]):
