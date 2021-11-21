@@ -24,12 +24,17 @@ class Engine:
                 continue
 
             if isinstance(action, MovementAction):
-                self.player.move(dx=action.dx, dy=action.dy)
+                new_x = self.player.x + action.dx
+                new_y = self.player.y + action.dy
+                if self.game_map.tiles["walkable"][new_x, new_y]:
+                    self.player.move(dx=action.dx, dy=action.dy)
 
             elif isinstance(action, EscapeAction):
                 raise SystemExit()
 
     def render(self, console: Console, context: Context) -> None:
+        self.game_map.render(console)
+
         for entity in self.entities:
             console.print(entity.x, entity.y, entity.char, fg=entity.color)
 
