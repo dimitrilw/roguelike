@@ -1,9 +1,9 @@
-# BUILT-INS
+# BUILT-IN
 from typing import Set, Iterable, Any
 # INSTALLED
 from tcod.context import Context
 from tcod.console import Console
-# LOCALS
+# LOCAL
 from actions import EscapeAction, MovementAction
 from entity import Entity
 from input_handlers import EventHandler
