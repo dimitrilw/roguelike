@@ -44,6 +44,8 @@ class Fighter(BaseComponent):
 
         self.engine.message_log.add_message(death_message, death_message_color)
 
+        self.engine.player.level.add_xp(self.parent.level.xp_given)
+
     def heal(self, heal_hp_num: int) -> int:
         if self.hp == self.max_hp:
             return 0

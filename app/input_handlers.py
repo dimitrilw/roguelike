@@ -48,14 +48,14 @@ MOVE_KEYS = {
     tcod.event.K_b: (-1, 1),
     tcod.event.K_n: (1, 1),
     # WASD keys.
-    tcod.event.K_w: (0, -1),
-    tcod.event.K_a: (-1, 0),
-    tcod.event.K_s: (0, 1),
-    tcod.event.K_d: (1, 0),
-    tcod.event.K_q: (-1, -1),
-    tcod.event.K_e: (1, -1),
-    tcod.event.K_z: (-1, 1),
-    tcod.event.K_c: (1, 1),
+    # tcod.event.K_w: (0, -1),
+    # tcod.event.K_a: (-1, 0),
+    # tcod.event.K_s: (0, 1),
+    # tcod.event.K_d: (1, 0),
+    # tcod.event.K_q: (-1, -1),
+    # tcod.event.K_e: (1, -1),
+    # tcod.event.K_z: (-1, 1),
+    # tcod.event.K_c: (1, 1),
 }
 WAIT_KEYS = {
     tcod.event.K_PERIOD,
@@ -74,7 +74,6 @@ If a handler is returned then it will become the active handler for future event
 If an action is returned it will be attempted and if it's valid then
 MainGameEventHandler will become the active handler.
 """
-
 
 class BaseEventHandler(tcod.event.EventDispatch[ActionOrHandler]):
     def handle_events(self, event: tcod.event.Event) -> BaseEventHandler:
@@ -131,6 +130,8 @@ class EventHandler(BaseEventHandler):
             if not self.engine.player.is_alive:
                 # The player was killed sometime during or after the action.
                 return GameOverEventHandler(self.engine)
+            elif self.engine.player.level.requires_level_up:
+                return LevelUpEventHandler(self.engine)
             return MainGameEventHandler(self.engine)  # Return to the main handler.
         return self
 
@@ -190,6 +191,121 @@ class AskUserEventHandler(EventHandler):
         self.engine.event_handler = MainGameEventHandler(self.engine)
         return None
 
+class CharacterScreenEventHandler(AskUserEventHandler):
+    TITLE = "Character Information"
+
+    # TODO: figure out why cannot close this pop-up
+
+    def on_render(self, console: tcod.Console) -> None:
+        super().on_render(console)
+
+        if self.engine.player.x <= 30:
+            x = 40
+        else:
+            x = 0
+
+        y = 0
+
+        width = len(self.TITLE) + 4
+
+        console.draw_frame(
+            x=x,
+            y=y,
+            width=width,
+            height=7,
+            title=self.TITLE,
+            clear=True,
+            fg=(255, 255, 255),
+            bg=(0, 0, 0),
+        )
+
+        console.print(
+            x=x + 1, y=y + 1, string=f"Level: {self.engine.player.level.current_level}"
+        )
+        console.print(
+            x=x + 1, y=y + 2, string=f"XP: {self.engine.player.level.current_xp}"
+        )
+        console.print(
+            x=x + 1,
+            y=y + 3,
+            string=f"XP for next Level: {self.engine.player.level.experience_to_next_level}",
+        )
+
+        console.print(
+            x=x + 1, y=y + 4, string=f"Attack: {self.engine.player.fighter.power}"
+        )
+        console.print(
+            x=x + 1, y=y + 5, string=f"Defense: {self.engine.player.fighter.defense}"
+        )
+
+class LevelUpEventHandler(AskUserEventHandler):
+    TITLE = "Level Up"
+
+    def on_render(self, console: tcod.Console) -> None:
+        super().on_render(console)
+
+        if self.engine.player.x <= 30:
+            x = 40
+        else:
+            x = 0
+
+        console.draw_frame(
+            x=x,
+            y=0,
+            width=35,
+            height=8,
+            title=self.TITLE,
+            clear=True,
+            fg=(255, 255, 255),
+            bg=(0, 0, 0),
+        )
+
+        console.print(x=x + 1, y=1, string="Congratulations! You level up!")
+        console.print(x=x + 1, y=2, string="Select an attribute to increase.")
+
+        console.print(
+            x=x + 1,
+            y=4,
+            string=f"a) Constitution (+20 HP, from {self.engine.player.fighter.max_hp})",
+        )
+        console.print(
+            x=x + 1,
+            y=5,
+            string=f"b) Strength (+1 attack, from {self.engine.player.fighter.power})",
+        )
+        console.print(
+            x=x + 1,
+            y=6,
+            string=f"c) Agility (+1 defense, from {self.engine.player.fighter.defense})",
+        )
+
+    def ev_keydown(self, event: tcod.event.KeyDown) -> Optional[ActionOrHandler]:
+        player = self.engine.player
+        key = event.sym
+        index = key - tcod.event.K_a
+
+        if 0 <= index <= 2:
+            if index == 0:
+                player.level.increase_max_hp()
+            elif index == 1:
+                player.level.increase_power()
+            else:
+                player.level.increase_defense()
+        else:
+            self.engine.message_log.add_message("Invalid entry.", color.invalid)
+
+            return None
+
+        return super().ev_keydown(event)
+
+    def ev_mousebuttondown(
+        self, event: tcod.event.MouseButtonDown
+    ) -> Optional[ActionOrHandler]:
+        """
+        Don't allow the player to click to exit the menu, like normal.
+        """
+        return None
+
 class InventoryEventHandler(AskUserEventHandler):
     """This handler lets the user select an item.
 
@@ -242,6 +358,8 @@ class InventoryEventHandler(AskUserEventHandler):
         player = self.engine.player
         key = event.sym
         index = key - tcod.event.K_a
+
+        # TODO: add key to close inventory menu
 
         if 0 <= index <= 26:
             try:
@@ -395,12 +513,6 @@ class MainGameEventHandler(EventHandler):
         ):
             return actions.TakeStairsAction(player)
 
-        elif key in MOVE_KEYS:
-            dx, dy = MOVE_KEYS[key]
-            action = BumpAction(player, dx, dy)
-        elif key in WAIT_KEYS:
-            action = WaitAction(player)
-
         elif key == tcod.event.K_ESCAPE:
             raise SystemExit()
 
@@ -416,8 +528,17 @@ class MainGameEventHandler(EventHandler):
         elif key == tcod.event.K_o:
             return InventoryDropHandler(self.engine)
 
+        elif key == tcod.event.K_c:
+            return CharacterScreenEventHandler(self.engine)
+
         elif key == tcod.event.K_SLASH:
             return LookHandler(self.engine)
+
+        elif key in MOVE_KEYS:
+            dx, dy = MOVE_KEYS[key]
+            action = BumpAction(player, dx, dy)
+        elif key in WAIT_KEYS:
+            action = WaitAction(player)
 
         # No valid key was pressed
         return action
