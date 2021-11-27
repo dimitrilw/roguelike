@@ -188,13 +188,10 @@ class AskUserEventHandler(EventHandler):
 
         By default this returns to the main event handler.
         """
-        self.engine.event_handler = MainGameEventHandler(self.engine)
-        return None
+        return MainGameEventHandler(self.engine)
 
 class CharacterScreenEventHandler(AskUserEventHandler):
     TITLE = "Character Information"
-
-    # TODO: figure out why cannot close this pop-up
 
     def on_render(self, console: tcod.Console) -> None:
         super().on_render(console)
@@ -358,8 +355,6 @@ class InventoryEventHandler(AskUserEventHandler):
         player = self.engine.player
         key = event.sym
         index = key - tcod.event.K_a
-
-        # TODO: add key to close inventory menu
 
         if 0 <= index <= 26:
             try:
